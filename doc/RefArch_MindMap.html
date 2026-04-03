@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Calico Unified Platform — Reference Architecture Mind Map</title>
+<style>
+  :root {
+    --orange: #F59E0B; --dark: #231F1F; --blue: #326DE6; --white: #FFFFFF;
+    --green: #22C55E; --green-bg: #F0FDF4; --green-border: #BBF7D0;
+    --amber: #F59E0B; --amber-bg: #FFFBEB; --amber-border: #FDE68A;
+    --grey: #9CA3AF; --grey-bg: #F9FAFB; --grey-border: #E5E7EB;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', 'Inter', system-ui, sans-serif; background: #F3F4F6; color: var(--dark); }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #6B7280; font-size: 14px; margin-bottom: 24px; }
+
+  /* Summary bar */
+  .summary { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; padding: 20px 24px; background: var(--dark); border-radius: 14px; margin-bottom: 24px; }
+  .summary-left { flex: 1; min-width: 220px; }
+  .summary-label { color: #9CA3AF; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px; }
+  .summary-num { color: var(--white); font-size: 36px; font-weight: 700; }
+  .summary-sub { color: #9CA3AF; font-size: 14px; margin-left: 8px; }
+  .summary-stats { display: flex; gap: 28px; }
+  .stat { text-align: center; }
+  .stat-val { font-size: 26px; font-weight: 700; }
+  .stat-label { color: #9CA3AF; font-size: 12px; }
+  .stat-done .stat-val { color: var(--green); }
+  .stat-wip .stat-val { color: var(--amber); }
+  .stat-todo .stat-val { color: var(--grey); }
+
+  /* Progress bar */
+  .progress { display: flex; border-radius: 4px; overflow: hidden; height: 8px; width: 100%; background: var(--grey-border); }
+  .progress-done { background: var(--green); }
+  .progress-wip { background: var(--amber); }
+  .progress-sm { height: 6px; }
+  .progress-lg { height: 10px; max-width: 300px; margin-top: 10px; }
+
+  /* Filter buttons */
+  .filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .filter-btn { padding: 6px 16px; border-radius: 20px; border: 1px solid #D1D5DB; background: #FFF; cursor: pointer; font-size: 13px; font-family: inherit; color: var(--dark); display: flex; align-items: center; gap: 6px; }
+  .filter-btn.active { border: 2px solid var(--orange); background: #FEF3C7; font-weight: 600; }
+
+  /* Dot */
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-sm { width: 8px; height: 8px; }
+  .dot-done { background: var(--green); }
+  .dot-wip { background: var(--amber); }
+  .dot-todo { background: var(--grey); }
+
+  /* Domain cards */
+  .domain { border: 1px solid #E5E7EB; border-radius: 14px; overflow: hidden; background: #FFF; margin-bottom: 14px; }
+  .domain-header { display: flex; align-items: center; gap: 12px; width: 100%; padding: 16px 20px; border: none; background: var(--dark); cursor: pointer; text-align: left; font-family: inherit; }
+  .domain-header.open { border-bottom: 1px solid #E5E7EB; }
+  .domain-arrow { font-size: 12px; color: #9CA3AF; transition: transform 0.15s; }
+  .domain-arrow.open { transform: rotate(90deg); }
+  .domain-name { font-weight: 700; color: var(--white); font-size: 17px; flex: 1; }
+  .domain-pct { font-size: 14px; color: var(--green); font-weight: 600; }
+  .domain-progress { width: 70px; }
+  .domain-body { padding: 14px 20px; }
+
+  /* L2 sections */
+  .l2 { margin-bottom: 8px; }
+  .l2-header { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 14px; border-radius: 10px; cursor: pointer; text-align: left; font-family: inherit; font-size: 14px; }
+  .l2-header-done { border: 1.5px solid var(--green-border); background: var(--green-bg); }
+  .l2-header-wip { border: 1.5px solid var(--amber-border); background: var(--amber-bg); }
+  .l2-header-todo { border: 1.5px solid var(--grey-border); background: var(--grey-bg); }
+  .l2-arrow { font-size: 10px; color: #6B7280; transition: transform 0.15s; }
+  .l2-arrow.open { transform: rotate(90deg); }
+  .l2-name { font-weight: 600; color: var(--dark); flex: 1; }
+  .l2-count { font-size: 11px; color: #6B7280; white-space: nowrap; }
+  .l2-progress { width: 48px; }
+  .l2-children { padding-left: 22px; padding-top: 4px; display: flex; flex-direction: column; gap: 4px; }
+
+  /* Leaf nodes */
+  .leaf { display: flex; align-items: flex-start; gap: 8px; padding: 7px 12px; border-radius: 8px; font-size: 13px; }
+  .leaf-done { background: var(--green-bg); border: 1px solid var(--green-border); }
+  .leaf-wip { background: var(--amber-bg); border: 1px solid var(--amber-border); }
+  .leaf-todo { background: var(--grey-bg); border: 1px solid var(--grey-border); }
+  .leaf-name { font-weight: 500; color: var(--dark); }
+  .leaf-detail { color: #6B7280; font-size: 12px; margin-left: 4px; }
+
+  /* Legend */
+  .legend { margin-top: 24px; padding: 16px 20px; background: #FFF7ED; border: 1px solid #FDE68A; border-radius: 12px; font-size: 13px; color: #92400E; }
+  .legend strong { font-weight: 600; }
+
+  /* Hidden helper */
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Calico Unified Platform — Reference Architecture Mind Map</h1>
+  <p class="subtitle">Coverage status across all domains, mapped to the 3-tier model (L1 Conceptual → L2 Component → L3 Implementation)</p>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="filters" id="filters"></div>
+
+  <div id="domains"></div>
+
+  <div class="legend">
+    <strong>Reading this map:</strong> Each top-level card is a domain. Expand to see L2 areas (sub-domains) and L3 leaf nodes (specific content areas needing L1/L2/L3 documentation).
+    Green = delivered content exists, Amber = work in progress, Grey = not yet started. The percentage shows how much of each domain has delivered content.
+  </div>
+</div>
+
+<script>
+const S = { done: "done", wip: "wip", todo: "todo" };
+const META = {
+  done: { label: "Delivered", css: "done" },
+  wip:  { label: "In Progress", css: "wip" },
+  todo: { label: "Not Started", css: "todo" },
+};
+
+const mindmap = [
+  { name: "Traffic Management", children: [
+    { name: "East-West", status: S.wip, children: [
+      { name: "Dataplane Options", status: S.done, detail: "eBPF, nftables, iptables comparison" },
+      { name: "Overlay Models", status: S.done, detail: "VXLAN, IP-in-IP, Native BGP" },
+      { name: "Route Reflectors", status: S.done, detail: "Topology design, BGP filtering" },
+      { name: "Packet Walk", status: S.done, detail: "L2+L3 narrative (Leon + Abhishek)" },
+    ]},
+    { name: "North-South", status: S.todo, children: [
+      { name: "Ingress", status: S.todo, detail: "Gateway API, Ingress Controller" },
+      { name: "Egress", status: S.todo, detail: "Egress Gateways, DNS Policies, FQDN" },
+    ]},
+    { name: "Service Mesh", status: S.todo, children: [
+      { name: "Envoy Sidecar Model", status: S.todo },
+      { name: "mTLS Termination", status: S.todo },
+      { name: "L7 Traffic Routing", status: S.todo },
+    ]},
+    { name: "IPAM", status: S.wip, children: [
+      { name: "IP Pool Design", status: S.done, detail: "Per-namespace, per-node, dual-stack" },
+      { name: "Mobility", status: S.wip, detail: "Live migration, BGP re-advertisement" },
+    ]},
+  ]},
+  { name: "Security", children: [
+    { name: "Policy Framework", status: S.wip, children: [
+      { name: "Tiered Policies", status: S.done, detail: "Infra / Platform / App tiers" },
+      { name: "Global Default Deny", status: S.done },
+      { name: "Policy Ordering", status: S.done },
+      { name: "Global Network Sets", status: S.wip },
+    ]},
+    { name: "Identity & Access", status: S.wip, children: [
+      { name: "Service Account Policies", status: S.done },
+      { name: "Namespace Segmentation", status: S.done },
+      { name: "Host Endpoint Protection", status: S.wip, detail: "Bare Metal / VM" },
+    ]},
+    { name: "Encryption", status: S.wip, children: [
+      { name: "WireGuard", status: S.wip, detail: "Node-to-Node" },
+      { name: "mTLS via Envoy", status: S.wip, detail: "Pod-to-Pod" },
+    ]},
+    { name: "Threat Defence", status: S.todo, children: [
+      { name: "L7 WAF (Coraza)", status: S.todo },
+      { name: "Intrusion Detection/DPI", status: S.todo },
+      { name: "Malicious IP Feeds", status: S.todo },
+    ]},
+    { name: "Enforcement", status: S.wip, children: [
+      { name: "Felix Policy Engine", status: S.done },
+      { name: "eBPF Kernel Enforcement", status: S.done },
+    ]},
+  ]},
+  { name: "Operations", children: [
+    { name: "Observability Pipeline", status: S.wip, children: [
+      { name: "Data Sources", status: S.done, detail: "Felix, Envoy, BIRD, DNS, eBPF Probes" },
+      { name: "Collection", status: S.done, detail: "LogCollector (Fluentd), Prometheus" },
+      { name: "Storage & Query", status: S.done, detail: "Elasticsearch / Linseed" },
+      { name: "Visualisation", status: S.done, detail: "Tigera Manager, Service Graph, Flow Vis" },
+      { name: "External Integrations", status: S.wip, detail: "S3, Splunk, Syslog, SIEM" },
+    ]},
+    { name: "Compliance & Governance", status: S.todo, children: [
+      { name: "Audit Logs", status: S.todo },
+      { name: "Flow Logs", status: S.todo },
+    ]},
+    { name: "Multi-cluster Mgmt", status: S.todo, children: [
+      { name: "Central Manager", status: S.todo },
+      { name: "Federated Policies", status: S.todo },
+    ]},
+  ]},
+  { name: "Platforms & Stacks", children: [
+    { name: "Managed K8s", status: S.wip, children: [
+      { name: "AKS", status: S.wip, detail: "Hub-and-spoke user story" },
+      { name: "EKS", status: S.todo },
+      { name: "GKE", status: S.todo },
+    ]},
+    { name: "Self-managed", status: S.wip, children: [
+      { name: "OpenShift", status: S.wip, detail: "On-prem user story" },
+      { name: "Rancher / RKE2", status: S.todo },
+      { name: "Kubeadm / Bare Metal", status: S.todo },
+    ]},
+    { name: "Hybrid & Multi-cloud", status: S.todo, children: [
+      { name: "Hub-and-Spoke Topologies", status: S.todo },
+      { name: "Cluster Mesh", status: S.todo },
+    ]},
+  ]},
+  { name: "Reference Application", children: [
+    { name: "Online Boutique", status: S.wip, children: [
+      { name: "Vertical Slice Walkthrough", status: S.wip },
+      { name: "Transaction Trace", status: S.todo, detail: "Ingress → Mesh → Egress" },
+      { name: "Per-domain Mapping", status: S.todo },
+    ]},
+  ]},
+];
+
+/* State */
+let currentFilter = "all";
+const openDomains = new Set(mindmap.map(d => d.name));
+const openL2s = new Set();
+mindmap.forEach(d => d.children.forEach(l2 => openL2s.add(d.name + "::" + l2.name)));
+
+/* Helpers */
+function count(node) {
+  if (node.children) {
+    let t = { done: 0, wip: 0, todo: 0, all: 0 };
+    node.children.forEach(c => { const s = count(c); t.done += s.done; t.wip += s.wip; t.todo += s.todo; t.all += s.all; });
+    return t;
+  }
+  return { done: node.status === S.done ? 1 : 0, wip: node.status === S.wip ? 1 : 0, todo: node.status === S.todo ? 1 : 0, all: 1 };
+}
+
+function progressHTML(c, cls) {
+  const t = c.all || 1;
+  return `<div class="progress ${cls || ''}">
+    ${c.done > 0 ? `<div class="progress-done" style="width:${(c.done/t)*100}%"></div>` : ''}
+    ${c.wip > 0 ? `<div class="progress-wip" style="width:${(c.wip/t)*100}%"></div>` : ''}
+  </div>`;
+}
+
+function dotHTML(status, sm) {
+  return `<span class="dot ${sm ? 'dot-sm' : ''} dot-${META[status].css}"></span>`;
+}
+
+/* Render */
+function render() {
+  // Totals
+  let totals = { done: 0, wip: 0, todo: 0, all: 0 };
+  mindmap.forEach(d => { const c = count(d); totals.done += c.done; totals.wip += c.wip; totals.todo += c.todo; totals.all += c.all; });
+  const overallPct = Math.round((totals.done / totals.all) * 100);
+
+  document.getElementById("summary").innerHTML = `
+    <div class="summary-left">
+      <div class="summary-label">Overall Coverage</div>
+      <div><span class="summary-num">${overallPct}%</span><span class="summary-sub">of ${totals.all} content areas</span></div>
+      ${progressHTML(totals, 'progress-lg')}
+    </div>
+    <div class="summary-stats">
+      <div class="stat stat-done"><div class="stat-val">${totals.done}</div><div class="stat-label">Delivered</div></div>
+      <div class="stat stat-wip"><div class="stat-val">${totals.wip}</div><div class="stat-label">In Progress</div></div>
+      <div class="stat stat-todo"><div class="stat-val">${totals.todo}</div><div class="stat-label">Not Started</div></div>
+    </div>`;
+
+  // Filters
+  const filterOpts = [
+    { key: "all", label: "All" },
+    { key: S.done, label: "Delivered" },
+    { key: S.wip, label: "In Progress" },
+    { key: S.todo, label: "Not Started" },
+  ];
+  document.getElementById("filters").innerHTML = filterOpts.map(f =>
+    `<button class="filter-btn ${currentFilter === f.key ? 'active' : ''}" data-filter="${f.key}">
+      ${f.key !== 'all' ? dotHTML(f.key, true) : ''} ${f.label}
+    </button>`
+  ).join('');
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => { currentFilter = btn.dataset.filter; render(); });
+  });
+
+  // Domains
+  let html = '';
+  mindmap.forEach(domain => {
+    const c = count(domain);
+    const pct = Math.round((c.done / (c.all || 1)) * 100);
+    const isOpen = openDomains.has(domain.name);
+
+    html += `<div class="domain">
+      <button class="domain-header ${isOpen ? 'open' : ''}" data-domain="${domain.name}">
+        <span class="domain-arrow ${isOpen ? 'open' : ''}">&#9654;</span>
+        <span class="domain-name">${domain.name}</span>
+        <span class="domain-pct">${pct}%</span>
+        <div class="domain-progress">${progressHTML(c)}</div>
+      </button>`;
+
+    if (isOpen) {
+      html += `<div class="domain-body">`;
+      domain.children.forEach(l2 => {
+        const l2c = count(l2);
+        const l2key = domain.name + "::" + l2.name;
+        const l2open = openL2s.has(l2key);
+
+        // Filter: skip L2 if no matching children
+        if (currentFilter !== "all") {
+          const hasMatch = l2.children.some(c => c.status === currentFilter);
+          if (!hasMatch) return;
+        }
+
+        html += `<div class="l2">
+          <button class="l2-header l2-header-${META[l2.status].css}" data-l2="${l2key}">
+            <span class="l2-arrow ${l2open ? 'open' : ''}">&#9654;</span>
+            ${dotHTML(l2.status)}
+            <span class="l2-name">${l2.name}</span>
+            <span class="l2-count">${l2c.done}/${l2c.all}</span>
+            <div class="l2-progress">${progressHTML(l2c, 'progress-sm')}</div>
+          </button>`;
+
+        if (l2open && l2.children) {
+          html += `<div class="l2-children">`;
+          l2.children.forEach(leaf => {
+            if (currentFilter !== "all" && leaf.status !== currentFilter) return;
+            html += `<div class="leaf leaf-${META[leaf.status].css}">
+              ${dotHTML(leaf.status, true)}
+              <div><span class="leaf-name">${leaf.name}</span>${leaf.detail ? `<span class="leaf-detail"> — ${leaf.detail}</span>` : ''}</div>
+            </div>`;
+          });
+          html += `</div>`;
+        }
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+  });
+
+  document.getElementById("domains").innerHTML = html;
+
+  // Bind toggles
+  document.querySelectorAll('.domain-header').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.domain;
+      openDomains.has(name) ? openDomains.delete(name) : openDomains.add(name);
+      render();
+    });
+  });
+  document.querySelectorAll('.l2-header').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.l2;
+      openL2s.has(key) ? openL2s.delete(key) : openL2s.add(key);
+      render();
+    });
+  });
+}
+
+render();
+</script>
+</body>
+</html>
